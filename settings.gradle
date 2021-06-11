@@ -1,0 +1,3 @@
+include ':multicast_cli'
+include ':multicast_ser'
+rootProject.name = "Multicast_apk"
