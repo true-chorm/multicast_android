@@ -1,4 +1,4 @@
-package com.chorm.mcapk;
+package com.chorm.mc_ser;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;

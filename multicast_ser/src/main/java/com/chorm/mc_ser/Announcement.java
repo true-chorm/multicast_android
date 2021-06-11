@@ -1,4 +1,4 @@
-package com.chorm.mcapk;
+package com.chorm.mc_ser;
 
 import android.content.Context;
 import android.os.CountDownTimer;

@@ -15,7 +15,7 @@ android {
     buildToolsVersion "30.0.1"
 
     defaultConfig {
-        applicationId "com.chorm.mcapk"
+        applicationId "com.chorm.mc_ser"
         minSdkVersion 19
         targetSdkVersion 29
         versionCode 1
