@@ -5,7 +5,7 @@ plugins {
 android {
     signingConfigs {
         debug {
-            storeFile file('C:\\Users\\hello\\Documents\\workspace\\multicast_apk\\significant\\release.jks')
+            storeFile file('C:\\Users\\hello\\Documents\\workspace\\android_significant\\multicast_apk_release.jks')
             storePassword '123456'
             keyAlias 'key0'
             keyPassword '123456'

@@ -1,4 +1,4 @@
-package com.chorm.multicast_cli;
+package com.chorm.mc_cli;
 
 import androidx.appcompat.app.AppCompatActivity;
 
