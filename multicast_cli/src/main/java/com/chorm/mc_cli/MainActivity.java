@@ -1,6 +1,5 @@
 package com.chorm.mc_cli;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.graphics.Color;
@@ -9,6 +8,8 @@ import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
 import android.widget.TextView;
+
+import java.util.Locale;
 
 /**
  * 1、监听服务端的宣告信息；
@@ -26,6 +27,7 @@ public class MainActivity extends AppCompatActivity {
 
     private TextView tvRecognize;
     private TextView tvServeIP;
+    private TextView tvMulticastAddr;
     private TextView tvStatusInfo;
 
     @Override
@@ -35,6 +37,7 @@ public class MainActivity extends AppCompatActivity {
 
         tvRecognize = findViewById(R.id.tvRecognize);
         tvServeIP = findViewById(R.id.tvServerIP);
+        tvMulticastAddr = findViewById(R.id.tvBrcAddr);
         tvStatusInfo = findViewById(R.id.tvStatusInfo);
     }
 
@@ -65,12 +68,20 @@ public class MainActivity extends AppCompatActivity {
         Log.d(TAG, "online()");
         tvRecognize.setText("在线");
         tvRecognize.setTextColor(Color.GREEN);
+
+        tvStatusInfo.setText("");
+        tvServeIP.setText(srvIP);
+
+        tvMulticastAddr.setText(String.format(Locale.US, getResources().getString(R.string.ip_address2), brcIP, brcPort));
     }
 
     private void offline() {
         Log.d(TAG, "offline()");
         tvRecognize.setText("离线");
         tvRecognize.setTextColor(Color.RED);
+        tvStatusInfo.setText("");
+        tvServeIP.setText("");
+        tvMulticastAddr.setText("");
     }
 
     private AnnouncementRcv.OnAnnoRcvCallback onAnnoRcvCallback = new AnnouncementRcv.OnAnnoRcvCallback() {
