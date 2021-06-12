@@ -12,7 +12,10 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
-
+/**
+ * 1、定时宣告服务端的信息；
+ * 2、按设置推流到组播网段；
+ * */
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
     private static final String TAG = "Multicast_server";
