@@ -52,7 +52,11 @@ public class AnnouncementRcv extends Thread {
         try {
             while (canRun) {
                 dgSocket.receive(dgPkg);
-                parseAnnouncement();
+                try {
+                    parseAnnouncement();
+                } catch (ArrayIndexOutOfBoundsException e) {
+                    e.printStackTrace();
+                }
                 SystemClock.sleep(1000);
             }
         } catch (Exception e) {
@@ -71,9 +75,60 @@ public class AnnouncementRcv extends Thread {
         Log.d(TAG, "parseAnnouncement()");
         Log.d(TAG, "pkg len:" + dgPkg.getLength() + ", from:" + dgPkg.getAddress().getHostAddress());
 
-        byte[] data = dgPkg.getData();
-        if(data[0] == '[' && data[data.length - 1] == ']') {
+        if(dgPkg.getLength() > 100) {
+            notifyAnnounceError("无效数据");
+            return;
+        }
 
+        if(dgPkg.getData()[0] != '[' || dgPkg.getData()[dgPkg.getLength() - 1] != ']') {
+            notifyAnnounceError("格式错误");
+            return;
+        }
+
+        String data = new String(dgPkg.getData(), 1, dgPkg.getLength() - 2);
+        Log.d(TAG, "parse:" + data);
+        String[] ps = data.split(",");
+        if(ps.length != 4) {
+            notifyAnnounceError("格式错误");
+            return;
+        }
+
+        if(!"ANNOCEMENT".equals(ps[0])) {
+            notifyAnnounceError("格式错误");
+            return;
+        }
+
+        if(streamInfo.isModifying) {
+            int i = 0;
+            for(; i < 10; i++) {
+                if(!streamInfo.isModifying) {
+                    streamInfo.isModifying = true; //Not an atomic operation, it's still no guarantee... 2021-06-12 18:30
+                    break;
+                }
+
+                SystemClock.sleep(10);
+            }
+
+            if(i > 9) {
+                notifyAnnounceError("未知错误");
+                return;
+            }
+        } else {
+            streamInfo.isModifying = true;
+        }
+
+
+        streamInfo.srvIP = ps[1];
+        streamInfo.brcIP = ps[2];
+        //TODO 检查IP合法性。
+        streamInfo.brcPort = ps[3];
+
+        streamInfo.isModifying = false;
+    }
+
+    private void notifyAnnounceError(String info) {
+        if (onAnnoRcvCallback != null) {
+            onAnnoRcvCallback.onAnnoRcvError(info);
         }
     }
 
