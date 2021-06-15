@@ -4,4 +4,6 @@
     <string name="ip_address2">%s:%s</string>
     <string name="multicast_rcv">%d(KB)</string>
     <string name="multicast_rcv_rate">%f%%</string>
+    <string name="timer_online">在线时长\n\t\t%s</string>
+    <string name="timer_offline">离线时长\n\t\t%s</string>
 </resources>

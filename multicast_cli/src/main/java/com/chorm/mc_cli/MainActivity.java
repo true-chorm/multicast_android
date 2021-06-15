@@ -6,10 +6,13 @@ import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.os.SystemClock;
 import android.util.Log;
 import android.widget.TextView;
 
+import java.text.SimpleDateFormat;
 import java.util.Locale;
+import java.util.TimeZone;
 
 /**
  * 1、监听服务端的宣告信息；
@@ -24,6 +27,9 @@ public class MainActivity extends AppCompatActivity {
     private String brcIP;
     private String brcPort;
     private AnnouncementRcv announcementRcv;
+    private int timerId;
+    private long timerBeginTick;
+    private boolean isOnline;
 
     private TextView tvRecognize;
     private TextView tvServeIP;
@@ -31,11 +37,13 @@ public class MainActivity extends AppCompatActivity {
     private TextView tvStatusInfo;
     private TextView tvTotalRcv;
     private TextView tvTotalRcvRate;
+    private TextView tvTimer;
 
     //以下是组播接收相关的。
     private String mcingIP;
     private String mcingPort;
     private MulticastRcv multicastRcv;
+    private SimpleDateFormat sdf;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,6 +56,11 @@ public class MainActivity extends AppCompatActivity {
         tvStatusInfo = findViewById(R.id.tvStatusInfo);
         tvTotalRcv = findViewById(R.id.tvTotalRcv);
         tvTotalRcvRate = findViewById(R.id.tvTotalRcvRate);
+        tvTimer = findViewById(R.id.tvTimer);
+        sdf = new SimpleDateFormat("HH:mm:ss");
+        sdf.setTimeZone(TimeZone.getTimeZone("GMT+00:00"));
+        isOnline = true; //For the next line.
+        offline();
     }
 
     @Override
@@ -74,21 +87,31 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void online() {
-        tvRecognize.setText("在线");
-        tvRecognize.setTextColor(Color.GREEN);
+        if(!isOnline) {
+            tvRecognize.setText("在线");
+            tvRecognize.setTextColor(Color.GREEN);
 
-        tvStatusInfo.setText("");
-        tvServeIP.setText(srvIP);
+            tvStatusInfo.setText("");
+            tvServeIP.setText(srvIP);
 
-        tvMulticastAddr.setText(String.format(Locale.US, getResources().getString(R.string.ip_address2), brcIP, brcPort));
+            tvMulticastAddr.setText(String.format(Locale.US, getResources().getString(R.string.ip_address2), brcIP, brcPort));
+            timerId = R.string.timer_online;
+            timerBeginTick = SystemClock.uptimeMillis();
+            isOnline = true;
+        }
     }
 
     private void offline() {
-        tvRecognize.setText("离线");
-        tvRecognize.setTextColor(Color.RED);
-        tvStatusInfo.setText("");
-        tvServeIP.setText("");
-        tvMulticastAddr.setText("");
+        if(isOnline) {
+            tvRecognize.setText("离线");
+            tvRecognize.setTextColor(Color.RED);
+            tvStatusInfo.setText("");
+            tvServeIP.setText("");
+            tvMulticastAddr.setText("");
+            timerId = R.string.timer_offline;
+            timerBeginTick = SystemClock.uptimeMillis();
+            isOnline = false;
+        }
     }
 
     private void multicast_rcv_proc() {
@@ -118,7 +141,6 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public void onMulticastStatistic(long kbTotal, int kbThisTime, long seqNoThisTime) {
-            Log.d(TAG, "hehe:" + kbTotal + ", this:" + kbThisTime + ", sn:" + seqNoThisTime);
             tvTotalRcv.setText(String.format(Locale.US, MainActivity.this.getResources().getString(R.string.multicast_rcv), kbTotal));
             tvTotalRcvRate.setText(String.format(Locale.US, MainActivity.this.getResources().getString(R.string.multicast_rcv_rate), ((double)kbTotal / (double)(seqNoThisTime)) * 100));
         }
@@ -148,6 +170,8 @@ public class MainActivity extends AppCompatActivity {
 
     private final Handler handler = new Handler() {
 
+        long tickTmp;
+
         @Override
         public void handleMessage(Message msg) {
             switch (msg.what) {
@@ -157,6 +181,8 @@ public class MainActivity extends AppCompatActivity {
                 case 2:
                     if (srvIP == null || brcIP == null || brcPort == null) {
                         offline();
+                        tickTmp = SystemClock.uptimeMillis() - timerBeginTick;
+                        tvTimer.setText(String.format(Locale.US, getResources().getString(timerId), sdf.format(tickTmp)));
                         return;
                     }
 
@@ -164,6 +190,9 @@ public class MainActivity extends AppCompatActivity {
 
                     online();
                     multicast_rcv_proc();
+
+                    tickTmp = SystemClock.uptimeMillis() - timerBeginTick;
+                    tvTimer.setText(String.format(Locale.US, getResources().getString(timerId), sdf.format(tickTmp)));
                     break;
             }
         }

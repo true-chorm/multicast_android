@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
+import java.util.Random;
 import java.util.logging.Logger;
 
 public class MulticastRcv extends Thread {
@@ -59,6 +60,7 @@ public class MulticastRcv extends Thread {
         DatagramPacket dgPkg = new DatagramPacket(rbuf, 1060);
         int usingtmp;
         try {
+            Random rd = new Random();
             while(canRun) {
                 ms.receive(dgPkg);
 
@@ -112,6 +114,7 @@ public class MulticastRcv extends Thread {
             int idxtmp = seqIdx[usingtmp];
             long kbTotalTmp = kbRcv;
 
+            Log.d(TAG, "fucking idxtmp:" + idxtmp);
             if(idxtmp > 0) {
                 //switch it
                 if(seqUsing == 0) {
@@ -131,7 +134,8 @@ public class MulticastRcv extends Thread {
                     onMulticastStatisticCallback.onMulticastStatistic(kbTotalTmp, idxtmp, pkgSeq[usingtmp][idxtmp - 1] - beginSeqNo);
                 }
             } else {
-
+                kbRcv = 0;
+                beginSeqNo = -1;
             }
 
             start();
