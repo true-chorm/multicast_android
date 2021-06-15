@@ -103,6 +103,8 @@ public class MulticastRcv extends Thread {
     }
 
     private final CountDownTimer statisticCalback = new CountDownTimer(1000, 1000) {
+
+        int zeroCount;
         @Override
         public void onTick(long millisUntilFinished) {
             //Do nothing.
@@ -114,8 +116,8 @@ public class MulticastRcv extends Thread {
             int idxtmp = seqIdx[usingtmp];
             long kbTotalTmp = kbRcv;
 
-            Log.d(TAG, "fucking idxtmp:" + idxtmp);
             if(idxtmp > 0) {
+                zeroCount = 0;
                 //switch it
                 if(seqUsing == 0) {
                     clearSeq(pkgSeq[1]);
@@ -126,7 +128,6 @@ public class MulticastRcv extends Thread {
                 }
 
                 //statistic
-                //sort first
                 sort(pkgSeq[usingtmp], 0, idxtmp - 1);
 
                 //notify
@@ -134,8 +135,12 @@ public class MulticastRcv extends Thread {
                     onMulticastStatisticCallback.onMulticastStatistic(kbTotalTmp, idxtmp, pkgSeq[usingtmp][idxtmp - 1] - beginSeqNo);
                 }
             } else {
-                kbRcv = 0;
-                beginSeqNo = -1;
+                if(zeroCount++ > 5) {
+                    Log.d(TAG, "reset statistic");
+                    kbRcv = 0;
+                    beginSeqNo = -1;
+                    zeroCount = 0;
+                }
             }
 
             start();
