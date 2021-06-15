@@ -89,10 +89,50 @@
     <LinearLayout
         android:background="@android:color/white"
         android:layout_marginStart="1dp"
+        android:padding="10dp"
+        android:orientation="vertical"
         android:layout_width="0dp"
         android:layout_height="match_parent"
         android:layout_weight="1">
 
-    </LinearLayout>
+        <TextView
+            android:text="总共接收"
+            android:textSize="22sp"
+            android:gravity="center"
+            android:layout_marginStart="10dp"
+            android:layout_width="wrap_content"
+            android:layout_height="50dp"/>
 
+        <TextView
+            android:id="@+id/tvTotalRcv"
+            android:textSize="18sp"
+            android:gravity="center"
+            android:layout_marginStart="30dp"
+            android:layout_width="wrap_content"
+            android:layout_height="50dp"/>
+
+        <TextView
+            android:text="接包率"
+            android:textSize="22sp"
+            android:gravity="center"
+            android:layout_marginStart="10dp"
+            android:layout_width="wrap_content"
+            android:layout_height="50dp"/>
+
+        <TextView
+            android:id="@+id/tvTotalRcvRate"
+            android:textSize="18sp"
+            android:gravity="center"
+            android:layout_marginStart="30dp"
+            android:layout_width="wrap_content"
+            android:layout_height="50dp"/>
+
+        <View
+            android:background="#98333333"
+            android:layout_marginTop="20dp"
+            android:layout_marginBottom="20dp"
+            android:layout_width="match_parent"
+            android:layout_height="1dp"/>
+
+    </LinearLayout>
 </LinearLayout>

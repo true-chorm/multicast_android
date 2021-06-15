@@ -2,4 +2,6 @@
     <string name="app_name">Multicast_cli</string>
     <string name="ip_address">%s:%d</string>
     <string name="ip_address2">%s:%s</string>
+    <string name="multicast_rcv">%d(KB)</string>
+    <string name="multicast_rcv_rate">%f%%</string>
 </resources>

@@ -4,6 +4,7 @@ import android.os.CountDownTimer;
 import android.os.SystemClock;
 import android.util.Log;
 
+import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
@@ -12,30 +13,31 @@ public class StreamPush extends Thread {
 
     private static final String TAG = "StreamPush";
 
-    private static final int BUF_LEN = 1024;
+    private static final int INET_PKG_LEN = 1024; //每个网络包1024字节
+    private static final int INET_PKG_AMOUNT = 10; //总共1000个网络包。
     private static final int PUSHED_BYTES_NOTIFY_INTERVAL = 1000;
     private final String ADDRESS;
     private final int PORT;
 
+    private int canSendCounter;
     private boolean canRun;
-    private long totalBytes;
-    private long bytesAmountLastCallback; //上一次回调时记录下的总数据量。
     private OnPushedCallback onPushedCallback;
     private MulticastSocket ms;
     private DatagramPacket dpkg;
-    private byte[] dbuf;
-    private long counter;
+
+    private byte[][] inetpkg;
+    private long totalKB;
 
     public StreamPush(String ip, String port, OnPushedCallback cb) {
         ADDRESS = ip;
         PORT = Integer.parseInt(port);
         onPushedCallback = cb;
 
-        counter = 0;
-        dbuf = new byte[BUF_LEN];
+        inetpkg = new byte[INET_PKG_AMOUNT][INET_PKG_LEN]; //8MB
         try {
             ms = new MulticastSocket();
-            dpkg = new DatagramPacket(dbuf, 0);
+//            ms.setTimeToLive(3);
+            dpkg = new DatagramPacket(inetpkg[0], 0);
             dpkg.setAddress(InetAddress.getByName(ADDRESS));
             dpkg.setPort(PORT);
         } catch (Exception e) {
@@ -46,15 +48,21 @@ public class StreamPush extends Thread {
     @Override
     public void run() {
         canRun = true;
+        canSendCounter = 0;
+        totalKB = 0;
         callbackTimer.start();
 
         try {
             while(canRun) {
-                loadData();
-                dpkg.setData(dbuf, 0, BUF_LEN);
-                ms.send(dpkg);
-                totalBytes += 1;
-                SystemClock.sleep(100);
+                if(canSendCounter > 0) {
+                    canSendCounter--;
+
+                    //load 8mb pkg and send it.
+                    loadAndSend();
+                    continue; //No need to wait, boy!
+                }
+
+                SystemClock.sleep(203);
             }
         } catch(Exception e) {
             e.printStackTrace();
@@ -63,17 +71,31 @@ public class StreamPush extends Thread {
         callbackTimer.cancel();
     }
 
-    private void loadData() {
-        counter++;
-        Log.d(TAG, "counter:" + counter);
-        dbuf[0] = (byte) (counter >> 56);
-        dbuf[1] = (byte) (counter >> 48);
-        dbuf[2] = (byte) (counter >> 40);
-        dbuf[3] = (byte) (counter >> 32);
-        dbuf[4] = (byte) (counter >> 24);
-        dbuf[5] = (byte) (counter >> 16);
-        dbuf[6] = (byte) (counter >> 8);
-        dbuf[7] = (byte) counter;
+    /**
+     * 准备好8MB的网络包。
+     * 一个包1kb，准备8000个。
+     * */
+    private void loadAndSend() throws IOException {
+        for(int i = 0; i < INET_PKG_AMOUNT; i++) {
+            loadData(inetpkg[i]);
+            dpkg.setData(inetpkg[i], 0, INET_PKG_LEN);
+            ms.send(dpkg);
+        }
+    }
+
+    private void loadData(byte[] dbuf) {
+        totalKB++;
+//        if(totalKB == Long.MAX_VALUE) {
+//            totalKB = 0;
+//        }
+        dbuf[0] = (byte) (totalKB >> 56);
+        dbuf[1] = (byte) (totalKB >> 48);
+        dbuf[2] = (byte) (totalKB >> 40);
+        dbuf[3] = (byte) (totalKB >> 32);
+        dbuf[4] = (byte) (totalKB >> 24);
+        dbuf[5] = (byte) (totalKB >> 16);
+        dbuf[6] = (byte) (totalKB >> 8);
+        dbuf[7] = (byte) totalKB;
     }
 
     public void stopPush() {
@@ -84,6 +106,7 @@ public class StreamPush extends Thread {
     private final CountDownTimer callbackTimer = new CountDownTimer(PUSHED_BYTES_NOTIFY_INTERVAL, PUSHED_BYTES_NOTIFY_INTERVAL) {
 
         private long tmp;
+        private long kbCountLastTime; //上一次回调时传过去的KB数量。
 
         @Override
         public void onTick(long millisUntilFinished) {
@@ -93,12 +116,13 @@ public class StreamPush extends Thread {
         @Override
         public void onFinish() {
             if(onPushedCallback != null) {
-                tmp = totalBytes;
-                onPushedCallback.onStreamPushedStatistic(tmp, tmp - bytesAmountLastCallback);
-                bytesAmountLastCallback = tmp;
-
-                start();
+                tmp = totalKB;
+                onPushedCallback.onStreamPushedStatistic(tmp, tmp - kbCountLastTime);
+                kbCountLastTime = tmp;
             }
+
+            canSendCounter++;
+            start();
         }
     };
 

@@ -41,6 +41,7 @@ public class AnnouncementRcv extends Thread {
 
     @Override
     public void run() {
+        Log.d(TAG, "run()");
         if (!canRun) {
             return;
         }
@@ -72,9 +73,6 @@ public class AnnouncementRcv extends Thread {
     }
 
     private void parseAnnouncement() {
-        Log.d(TAG, "parseAnnouncement()");
-        Log.d(TAG, "pkg len:" + dgPkg.getLength() + ", from:" + dgPkg.getAddress().getHostAddress());
-
         if(dgPkg.getLength() > 100) {
             notifyAnnounceError("无效数据");
             return;
@@ -86,7 +84,6 @@ public class AnnouncementRcv extends Thread {
         }
 
         String data = new String(dgPkg.getData(), 1, dgPkg.getLength() - 2);
-        Log.d(TAG, "parse:" + data);
         String[] ps = data.split(",");
         if(ps.length != 4) {
             notifyAnnounceError("格式错误");

@@ -29,6 +29,13 @@ public class MainActivity extends AppCompatActivity {
     private TextView tvServeIP;
     private TextView tvMulticastAddr;
     private TextView tvStatusInfo;
+    private TextView tvTotalRcv;
+    private TextView tvTotalRcvRate;
+
+    //以下是组播接收相关的。
+    private String mcingIP;
+    private String mcingPort;
+    private MulticastRcv multicastRcv;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,6 +46,8 @@ public class MainActivity extends AppCompatActivity {
         tvServeIP = findViewById(R.id.tvServerIP);
         tvMulticastAddr = findViewById(R.id.tvBrcAddr);
         tvStatusInfo = findViewById(R.id.tvStatusInfo);
+        tvTotalRcv = findViewById(R.id.tvTotalRcv);
+        tvTotalRcvRate = findViewById(R.id.tvTotalRcvRate);
     }
 
     @Override
@@ -65,7 +74,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void online() {
-        Log.d(TAG, "online()");
         tvRecognize.setText("在线");
         tvRecognize.setTextColor(Color.GREEN);
 
@@ -76,7 +84,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void offline() {
-        Log.d(TAG, "offline()");
         tvRecognize.setText("离线");
         tvRecognize.setTextColor(Color.RED);
         tvStatusInfo.setText("");
@@ -84,11 +91,43 @@ public class MainActivity extends AppCompatActivity {
         tvMulticastAddr.setText("");
     }
 
+    private void multicast_rcv_proc() {
+        if(brcIP != null && brcPort != null) {
+            if(!brcIP.equals(mcingIP) || !brcPort.equals(mcingPort)) {
+                stopMulticastPlaying();
+                mcingIP = brcIP;
+                mcingPort = brcPort;
+                startMulticastPlay();
+            }
+        }
+    }
+
+    private void stopMulticastPlaying() {
+        if(multicastRcv != null) {
+            multicastRcv.stopRcv();
+            multicastRcv = null;
+        }
+    }
+
+    private void startMulticastPlay() {
+        multicastRcv = new MulticastRcv(mcingIP, mcingPort, onMulticastStatisticCallback);
+        multicastRcv.start();
+    }
+
+    private MulticastRcv.OnMulticastStatisticCallback onMulticastStatisticCallback = new MulticastRcv.OnMulticastStatisticCallback() {
+
+        @Override
+        public void onMulticastStatistic(long kbTotal, int kbThisTime, long seqNoThisTime) {
+            Log.d(TAG, "hehe:" + kbTotal + ", this:" + kbThisTime + ", sn:" + seqNoThisTime);
+            tvTotalRcv.setText(String.format(Locale.US, MainActivity.this.getResources().getString(R.string.multicast_rcv), kbTotal));
+            tvTotalRcvRate.setText(String.format(Locale.US, MainActivity.this.getResources().getString(R.string.multicast_rcv_rate), ((double)kbTotal / (double)(seqNoThisTime)) * 100));
+        }
+    };
+
     private AnnouncementRcv.OnAnnoRcvCallback onAnnoRcvCallback = new AnnouncementRcv.OnAnnoRcvCallback() {
 
         @Override
         public void onAnnoRcv(String serverIP, String brcIP, String brcPort) {
-            Log.d(TAG, "onAnnoRcv(), srvip:" + serverIP + ", brcip:" + brcIP + ", brcport:" + brcPort);
             srvIP = serverIP;
             MainActivity.this.brcIP = brcIP;
             MainActivity.this.brcPort = brcPort;
@@ -98,7 +137,6 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public void onAnnoRcvError(String info) {
-            Log.d(TAG, "onAnnoRcvError(), info:" + info);
             if (info != null && !info.isEmpty()) {
                 annoErrorInfo = info;
                 handler.sendEmptyMessage(1);
@@ -125,6 +163,7 @@ public class MainActivity extends AppCompatActivity {
                     //TODO IP地址和端口号的有效性检查 。
 
                     online();
+                    multicast_rcv_proc();
                     break;
             }
         }

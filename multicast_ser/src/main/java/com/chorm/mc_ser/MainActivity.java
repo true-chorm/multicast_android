@@ -67,8 +67,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             String mcAddr = getMulticastAddress();
             String mcPort = getMulticastPort();
 
-//            streamPush = new StreamPush(mcAddr, mcPort, onPushedCallback);
-//            streamPush.start();
+            streamPush = new StreamPush(mcAddr, mcPort, onPushedCallback);
+            streamPush.start();
 
             if(announcement != null) {
                 announcement.stopAnno();

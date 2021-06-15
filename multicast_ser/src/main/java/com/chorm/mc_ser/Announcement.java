@@ -1,18 +1,14 @@
 package com.chorm.mc_ser;
 
 import android.content.Context;
-import android.os.CountDownTimer;
 import android.os.SystemClock;
-import android.util.Log;
 
-import java.lang.reflect.Array;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
-import java.util.Arrays;
 import java.util.Enumeration;
 
 public class Announcement extends Thread {
@@ -45,7 +41,6 @@ public class Announcement extends Thread {
             return;
         }
 
-        Log.d(TAG, "ip:" + ia.getHostAddress());
         String ip = ia.getHostAddress();
         String brcAddr = ip.substring(0, ip.lastIndexOf('.'));
         String[] ipPrefix = brcAddr.split("\\.");
@@ -76,7 +71,6 @@ public class Announcement extends Thread {
         try {
             dgSocket = new DatagramSocket();
             InetAddress ia2 = InetAddress.getByAddress(brcAddr2);
-            Log.d(TAG, "fuck you:" + ia2.getHostAddress());
             StringBuilder sb = new StringBuilder();
             sb.append("[");
             sb.append("ANNOCEMENT,");
@@ -126,7 +120,7 @@ public class Announcement extends Thread {
                 } catch(Exception e) {
                     e.printStackTrace();
                 }
-                Log.d(TAG, "Announced!");
+//                Log.d(TAG, "Announced!");
             } else {
                 if(onAnnouncementCallback != null) {
                     onAnnouncementCallback.onAnno("无法启用感知服务");
