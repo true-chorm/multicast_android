@@ -9,7 +9,6 @@ import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
 import java.util.Random;
-import java.util.logging.Logger;
 
 public class MulticastRcv extends Thread {
 
@@ -128,7 +127,7 @@ public class MulticastRcv extends Thread {
                 }
 
                 //statistic
-                sort(pkgSeq[usingtmp], 0, idxtmp - 1);
+//                sort(pkgSeq[usingtmp], 0, idxtmp - 1);
 
                 //notify
                 if(onMulticastStatisticCallback != null) {

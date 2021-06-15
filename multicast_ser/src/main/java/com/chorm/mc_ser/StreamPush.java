@@ -14,7 +14,7 @@ public class StreamPush extends Thread {
     private static final String TAG = "StreamPush";
 
     private static final int INET_PKG_LEN = 1024; //每个网络包1024字节
-    private static final int INET_PKG_AMOUNT = 10; //总共1000个网络包。
+    private static final int INET_PKG_AMOUNT = 8000; //总共1000个网络包。
     private static final int PUSHED_BYTES_NOTIFY_INTERVAL = 1000;
     private final String ADDRESS;
     private final int PORT;
