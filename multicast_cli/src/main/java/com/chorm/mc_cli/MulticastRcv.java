@@ -35,7 +35,7 @@ public class MulticastRcv extends Thread {
         onMulticastStatisticCallback = cb;
         canRun = true;
         kbRcv = 0;
-        pkgSeq = new long[2][10000];
+        pkgSeq = new long[2][20000]; //2w个坑位虚位以待。
         seqIdx = new int[2];
         seqUsing = 0;
         beginSeqNo = -1;
@@ -115,6 +115,7 @@ public class MulticastRcv extends Thread {
             int idxtmp = seqIdx[usingtmp];
             long kbTotalTmp = kbRcv;
 
+            Log.d(TAG, "pkg received count:" + idxtmp);
             if(idxtmp > 0) {
                 zeroCount = 0;
                 //switch it

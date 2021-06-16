@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Multicast_server</string>
+    <string name="bytes_and_time">%sKB\t[%s]</string>
 </resources>

@@ -12,14 +12,18 @@ import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.os.SystemClock;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
+import java.text.SimpleDateFormat;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.TimeZone;
 
 /**
  * 1、定时宣告服务端的信息；
@@ -31,6 +35,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private long totalBytesPushed;
     private long bytesPushedSinceLastTime;
+    private long beginTick;
 
     private TextView tvPushedBytes;
     private TextView tvStatusInfo;
@@ -43,6 +48,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private Announcement announcement;
     private ReportRcv reportRcv;
     private String annoInfo;
+    SimpleDateFormat sdf;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,6 +64,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         btnBegin.setOnClickListener(this);
         btnStop.setOnClickListener(this);
+
+        sdf = new SimpleDateFormat("HH:mm:ss");
+        sdf.setTimeZone(TimeZone.getTimeZone("GMT+00:00"));
     }
 
     @Override
@@ -93,6 +102,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             streamPush = new StreamPush(mcAddr, mcPort, onPushedCallback);
             streamPush.start();
+            beginTick = SystemClock.uptimeMillis();
 
             if(announcement != null) {
                 announcement.stopAnno();
@@ -167,7 +177,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         public void handleMessage(@NonNull Message msg) {
             switch(msg.what) {
                 case 1:
-                    tvPushedBytes.setText(String.valueOf(totalBytesPushed));
+                    tvPushedBytes.setText(String.format(Locale.US, getResources().getString(R.string.bytes_and_time), Long.toString(totalBytesPushed), sdf.format(SystemClock.uptimeMillis() - beginTick)));
                     break;
                 case 2:
                     tvStatusInfo.setText(annoInfo);

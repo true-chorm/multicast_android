@@ -14,8 +14,9 @@ public class StreamPush extends Thread {
     private static final String TAG = "StreamPush";
 
     private static final int INET_PKG_LEN = 1024; //每个网络包1024字节
-    private static final int INET_PKG_AMOUNT = 8000; //总共1000个网络包。
-    private static final int PUSHED_BYTES_NOTIFY_INTERVAL = 1000;
+    private static final int INET_PKG_AMOUNT = 10000; //总共n个网络包。
+    private static final int PUSH_FUTURE = 100000; //100s
+    private static final int PUSH_INTERVAL = 1000; //1s
     private final String ADDRESS;
     private final int PORT;
 
@@ -35,8 +36,7 @@ public class StreamPush extends Thread {
 
         inetpkg = new byte[INET_PKG_AMOUNT][INET_PKG_LEN]; //8MB
         try {
-            ms = new MulticastSocket();
-//            ms.setTimeToLive(3);
+            ms = new MulticastSocket(); //Let TTL as 1
             dpkg = new DatagramPacket(inetpkg[0], 0);
             dpkg.setAddress(InetAddress.getByName(ADDRESS));
             dpkg.setPort(PORT);
@@ -103,18 +103,13 @@ public class StreamPush extends Thread {
         onPushedCallback = null;
     }
 
-    private final CountDownTimer callbackTimer = new CountDownTimer(PUSHED_BYTES_NOTIFY_INTERVAL, PUSHED_BYTES_NOTIFY_INTERVAL) {
+    private final CountDownTimer callbackTimer = new CountDownTimer(PUSH_FUTURE, PUSH_INTERVAL) {
 
         private long tmp;
         private long kbCountLastTime; //上一次回调时传过去的KB数量。
 
         @Override
         public void onTick(long millisUntilFinished) {
-            //Let it empty.
-        }
-
-        @Override
-        public void onFinish() {
             if(onPushedCallback != null) {
                 tmp = totalKB;
                 onPushedCallback.onStreamPushedStatistic(tmp, tmp - kbCountLastTime);
@@ -122,6 +117,10 @@ public class StreamPush extends Thread {
             }
 
             canSendCounter++;
+        }
+
+        @Override
+        public void onFinish() {
             start();
         }
     };
