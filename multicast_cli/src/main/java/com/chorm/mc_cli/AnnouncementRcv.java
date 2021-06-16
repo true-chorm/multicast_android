@@ -37,6 +37,9 @@ public class AnnouncementRcv extends Thread {
                 cb.onAnnoRcvError("无法创建网络通信！");
             }
         }
+
+        //Create an timer for notify result.
+        notifyTimer.start();
     }
 
     @Override
@@ -45,10 +48,6 @@ public class AnnouncementRcv extends Thread {
         if (!canRun) {
             return;
         }
-
-        //Create an timer for notify result.
-        notifyTimer.start();
-
 
         try {
             while (canRun) {

@@ -18,6 +18,9 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
+import java.util.Map;
+import java.util.Set;
+
 /**
  * 1、定时宣告服务端的信息；
  * 2、按设置推流到组播网段；
@@ -38,6 +41,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private StreamPush streamPush;
     private Announcement announcement;
+    private ReportRcv reportRcv;
     private String annoInfo;
 
     @Override
@@ -73,6 +77,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     protected void onStop() {
         super.onStop();
         unregisterReceiver(networkStatusReceiver);
+        onClick(btnStop);
     }
 
     @Override
@@ -96,6 +101,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             announcement = new Announcement(this, mcAddr, mcPort, onAnnouncementCallback);
             announcement.start();
+
+            startReporterRcv();
+
             Log.d(TAG, "begin");
         } else if(v == btnStop) {
             if(streamPush != null) {
@@ -107,7 +115,22 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 announcement.stopAnno();
                 announcement = null;
             }
+
+            stopReporterRcv();
             Log.d(TAG, "stop");
+        }
+    }
+
+    private void startReporterRcv() {
+        stopReporterRcv();
+        reportRcv = new ReportRcv(onReportCallback);
+        reportRcv.start();
+    }
+
+    private void stopReporterRcv() {
+        if(reportRcv != null) {
+            reportRcv.stopRcv();
+            reportRcv = null;
         }
     }
 
@@ -176,6 +199,35 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     break;
                 }
             }
+        }
+    };
+
+    private final ReportRcv.OnReportCallback onReportCallback = new ReportRcv.OnReportCallback() {
+        Set<String> keys;
+        ReportRcv.Info info;
+        StringBuilder sb = new StringBuilder();
+        @Override
+        public void onReported(Map<String, ReportRcv.Info> onlineDevs) {
+            keys = onlineDevs.keySet();
+            sb.delete(0, sb.length());
+            for(String key : keys) {
+                info = onlineDevs.get(key);
+                sb.append("[");
+                sb.append(info.cliAddr);
+                sb.append("]  ");
+                sb.append(info.mcAddr);
+                sb.append(":");
+                sb.append(info.mcPort);
+                sb.append(",  ");
+                sb.append(info.duration);
+                sb.append(",  ");
+                sb.append(info.kbTotal);
+                sb.append("(KB),  ");
+                sb.append(info.rcvRate);
+                sb.append("\n");
+            }
+
+            tvStatusInfo.setText(sb.toString());
         }
     };
 }

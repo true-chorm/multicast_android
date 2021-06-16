@@ -2,7 +2,14 @@ package com.chorm.mc_cli;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.Color;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -10,7 +17,12 @@ import android.os.SystemClock;
 import android.util.Log;
 import android.widget.TextView;
 
+import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
 import java.text.SimpleDateFormat;
+import java.util.Enumeration;
 import java.util.Locale;
 import java.util.TimeZone;
 
@@ -45,6 +57,10 @@ public class MainActivity extends AppCompatActivity {
     private MulticastRcv multicastRcv;
     private SimpleDateFormat sdf;
 
+    //以下是报告器相关。
+    private long kbTotal;
+    private Reporter reporter;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -64,8 +80,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
-    protected void onResume() {
-        super.onResume();
+    protected void onStart() {
+        super.onStart();
 
         if (announcementRcv != null) {
             announcementRcv.stopRcv();
@@ -74,6 +90,11 @@ public class MainActivity extends AppCompatActivity {
 
         announcementRcv = new AnnouncementRcv(onAnnoRcvCallback);
         announcementRcv.start();
+
+        startReporter();
+
+        IntentFilter filter = new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION);
+        registerReceiver(networkStatusReceiver, filter);
     }
 
     @Override
@@ -83,6 +104,23 @@ public class MainActivity extends AppCompatActivity {
         if (announcementRcv != null) {
             announcementRcv.stopRcv();
             announcementRcv = null;
+        }
+
+        stopReporter();
+
+        unregisterReceiver(networkStatusReceiver);
+    }
+
+    private void startReporter() {
+        stopReporter();
+        reporter = new Reporter(this);
+        reporter.start();
+    }
+
+    private void stopReporter() {
+        if(reporter != null) {
+            reporter.stopRun();
+            reporter = null;
         }
     }
 
@@ -137,16 +175,48 @@ public class MainActivity extends AppCompatActivity {
         multicastRcv.start();
     }
 
-    private MulticastRcv.OnMulticastStatisticCallback onMulticastStatisticCallback = new MulticastRcv.OnMulticastStatisticCallback() {
+    public String getServerAddr() {
+        return srvIP;
+    }
+
+    public String getMulticastAddr() {
+        return mcingIP;
+    }
+
+    public String getMulticastPort() {
+        return mcingPort;
+    }
+
+    public String getDuration() {
+        String[] tmp = tvTimer.getText().toString().split("\t");
+        if(tmp.length == 3) {
+            return tmp[2];
+        } else {
+            return "00:00:00";
+        }
+    }
+
+    public long getKBTotal() {
+        return kbTotal;
+    }
+
+    public String getRcvRate() {
+        return tvTotalRcvRate.getText().toString();
+    }
+
+    private final MulticastRcv.OnMulticastStatisticCallback onMulticastStatisticCallback = new MulticastRcv.OnMulticastStatisticCallback() {
 
         @Override
         public void onMulticastStatistic(long kbTotal, int kbThisTime, long seqNoThisTime) {
+            MainActivity.this.kbTotal = kbTotal;
             tvTotalRcv.setText(String.format(Locale.US, MainActivity.this.getResources().getString(R.string.multicast_rcv), kbTotal));
             tvTotalRcvRate.setText(String.format(Locale.US, MainActivity.this.getResources().getString(R.string.multicast_rcv_rate), ((double)kbTotal / (double)(seqNoThisTime)) * 100));
         }
     };
 
-    private AnnouncementRcv.OnAnnoRcvCallback onAnnoRcvCallback = new AnnouncementRcv.OnAnnoRcvCallback() {
+    private final AnnouncementRcv.OnAnnoRcvCallback onAnnoRcvCallback = new AnnouncementRcv.OnAnnoRcvCallback() {
+
+        long tickTmp;
 
         @Override
         public void onAnnoRcv(String serverIP, String brcIP, String brcPort) {
@@ -154,47 +224,58 @@ public class MainActivity extends AppCompatActivity {
             MainActivity.this.brcIP = brcIP;
             MainActivity.this.brcPort = brcPort;
 
-            handler.sendEmptyMessage(2);
+            if (srvIP == null || brcIP == null || brcPort == null) {
+                offline();
+                tickTmp = SystemClock.uptimeMillis() - timerBeginTick;
+                tvTimer.setText(String.format(Locale.US, getResources().getString(timerId), sdf.format(tickTmp)));
+                if(multicastRcv != null) {
+                    multicastRcv.resetIndicator();
+                }
+                return;
+            }
+
+            //TODO IP地址和端口号的有效性检查 。
+
+            online();
+            multicast_rcv_proc();
+
+            tickTmp = SystemClock.uptimeMillis() - timerBeginTick;
+            tvTimer.setText(String.format(Locale.US, getResources().getString(timerId), sdf.format(tickTmp)));
         }
 
         @Override
         public void onAnnoRcvError(String info) {
             if (info != null && !info.isEmpty()) {
                 annoErrorInfo = info;
-                handler.sendEmptyMessage(1);
+                tvStatusInfo.setText(annoErrorInfo);
             } else {
                 annoErrorInfo = null;
             }
         }
     };
 
-    private final Handler handler = new Handler() {
-
-        long tickTmp;
-
+    private final BroadcastReceiver networkStatusReceiver = new BroadcastReceiver() {
         @Override
-        public void handleMessage(Message msg) {
-            switch (msg.what) {
-                case 1:
-                    tvStatusInfo.setText(annoErrorInfo);
-                    break;
-                case 2:
-                    if (srvIP == null || brcIP == null || brcPort == null) {
-                        offline();
-                        tickTmp = SystemClock.uptimeMillis() - timerBeginTick;
-                        tvTimer.setText(String.format(Locale.US, getResources().getString(timerId), sdf.format(tickTmp)));
-                        return;
+        public void onReceive(Context context, Intent intent) {
+            ConnectivityManager ctm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+            if(ctm == null) {
+                Log.e(TAG, "Not support network");
+                return;
+            }
+
+            NetworkInfo[] nis = ctm.getAllNetworkInfo();
+            for(NetworkInfo ni : nis) {
+                if("ethernet".equals(ni.getTypeName())) {
+                    if(ni.getState() == NetworkInfo.State.CONNECTED) {
+                        startReporter();
+                    } else if(ni.getState() == NetworkInfo.State.DISCONNECTED) {
+                        stopReporter();
                     }
-
-                    //TODO IP地址和端口号的有效性检查 。
-
-                    online();
-                    multicast_rcv_proc();
-
-                    tickTmp = SystemClock.uptimeMillis() - timerBeginTick;
-                    tvTimer.setText(String.format(Locale.US, getResources().getString(timerId), sdf.format(tickTmp)));
                     break;
+                }
             }
         }
     };
+
+
 }

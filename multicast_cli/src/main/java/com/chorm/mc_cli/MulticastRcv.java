@@ -182,6 +182,11 @@ public class MulticastRcv extends Thread {
         }
     };
 
+    public void resetIndicator() {
+        kbRcv = 0;
+        beginSeqNo = -1;
+    }
+
     public interface OnMulticastStatisticCallback {
         void onMulticastStatistic(long kbTotal, int kbThisTime, long seqNoThisTime);
     }
