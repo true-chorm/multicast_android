@@ -3,6 +3,12 @@ package com.chorm.mc_ser;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -51,9 +57,22 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     @Override
+    protected void onStart() {
+        super.onStart();
+        IntentFilter filter = new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION);
+        registerReceiver(networkStatusReceiver, filter);
+    }
+
+    @Override
     protected void onResume() {
         super.onResume();
         Log.i(TAG, "Multicast server running");
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        unregisterReceiver(networkStatusReceiver);
     }
 
     @Override
@@ -134,4 +153,29 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     };
 
+    private final BroadcastReceiver networkStatusReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            Log.d(TAG, "onReceive()");
+            ConnectivityManager ctm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+            if(ctm == null) {
+                Log.e(TAG, "Not support network");
+                return;
+            }
+
+            NetworkInfo[] nis = ctm.getAllNetworkInfo();
+            for(NetworkInfo ni : nis) {
+                if("ethernet".equals(ni.getTypeName())) {
+                    if(ni.getState() == NetworkInfo.State.CONNECTED) {
+                        Log.d(TAG, "network ok");
+                        onClick(btnBegin);
+                    } else if(ni.getState() == NetworkInfo.State.DISCONNECTED) {
+                        Log.d(TAG, "network broken");
+                        onClick(btnStop);
+                    }
+                    break;
+                }
+            }
+        }
+    };
 }
