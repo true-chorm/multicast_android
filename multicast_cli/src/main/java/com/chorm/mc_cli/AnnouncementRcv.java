@@ -74,11 +74,13 @@ public class AnnouncementRcv extends Thread {
     private void parseAnnouncement() {
         if(dgPkg.getLength() > 100) {
             notifyAnnounceError("无效数据");
+            Log.w(TAG, "err01");
             return;
         }
 
         if(dgPkg.getData()[0] != '[' || dgPkg.getData()[dgPkg.getLength() - 1] != ']') {
             notifyAnnounceError("格式错误");
+            Log.w(TAG, "err02");
             return;
         }
 
@@ -86,11 +88,13 @@ public class AnnouncementRcv extends Thread {
         String[] ps = data.split(",");
         if(ps.length != 4) {
             notifyAnnounceError("格式错误");
+            Log.w(TAG, "err03");
             return;
         }
 
         if(!"ANNOCEMENT".equals(ps[0])) {
             notifyAnnounceError("格式错误");
+            Log.w(TAG, "err04");
             return;
         }
 
@@ -107,6 +111,7 @@ public class AnnouncementRcv extends Thread {
 
             if(i > 9) {
                 notifyAnnounceError("未知错误");
+                Log.w(TAG, "err05");
                 return;
             }
         } else {

@@ -1,6 +1,5 @@
 package com.chorm.mc_cli;
 
-import android.os.CountDownTimer;
 import android.os.SystemClock;
 import android.util.Log;
 
@@ -80,7 +79,6 @@ public class Reporter extends Thread {
                                     dgPkg.setPort(8405);
                                     dgPkg.setData(sb.toString().getBytes());
                                     dgSocket.send(dgPkg);
-                                    Log.d(TAG, "report pkg sent:");
                                 }
                             }
                         }

@@ -14,6 +14,8 @@ public class MulticastRcv extends Thread {
 
     private static final String TAG = "MulticastRcv";
 
+    private static final int PKG_MAX = 50000; //5w个坑位。
+
     private boolean canRun;
     private String ip;
     private int port;
@@ -35,7 +37,7 @@ public class MulticastRcv extends Thread {
         onMulticastStatisticCallback = cb;
         canRun = true;
         kbRcv = 0;
-        pkgSeq = new long[2][20000]; //2w个坑位虚位以待。
+        pkgSeq = new long[2][PKG_MAX];
         seqIdx = new int[2];
         seqUsing = 0;
         beginSeqNo = -1;
@@ -59,7 +61,6 @@ public class MulticastRcv extends Thread {
         DatagramPacket dgPkg = new DatagramPacket(rbuf, 1060);
         int usingtmp;
         try {
-            Random rd = new Random();
             while(canRun) {
                 ms.receive(dgPkg);
 
@@ -67,6 +68,11 @@ public class MulticastRcv extends Thread {
                 if(dgPkg.getLength() == 1024) {
                     kbRcv++;
                     usingtmp = seqUsing;
+                    if(seqIdx[usingtmp] >= PKG_MAX) {
+                        Log.w(TAG, "drop pkg cause out of flow");
+                        continue;
+                    }
+
                     pkgSeq[usingtmp][seqIdx[usingtmp]] = longFrom8Bytes(dgPkg.getData(), 0, false);
                     if(beginSeqNo == -1) {
                         beginSeqNo = pkgSeq[usingtmp][seqIdx[usingtmp]] - 1;
@@ -77,6 +83,7 @@ public class MulticastRcv extends Thread {
         } catch(Exception e) {
             e.printStackTrace();
         }
+        Log.w(TAG, "multicast rcv thread end");
     }
 
     public static long longFrom8Bytes(byte[] input, int offset, boolean littleEndian){
@@ -115,7 +122,7 @@ public class MulticastRcv extends Thread {
             int idxtmp = seqIdx[usingtmp];
             long kbTotalTmp = kbRcv;
 
-            Log.d(TAG, "pkg received count:" + idxtmp);
+            Log.d(TAG, "pkg count:" + idxtmp);
             if(idxtmp > 0) {
                 zeroCount = 0;
                 //switch it
@@ -135,7 +142,7 @@ public class MulticastRcv extends Thread {
                     onMulticastStatisticCallback.onMulticastStatistic(kbTotalTmp, idxtmp, pkgSeq[usingtmp][idxtmp - 1] - beginSeqNo);
                 }
             } else {
-                if(zeroCount++ > 5) {
+                if(zeroCount++ > 3) {
                     Log.d(TAG, "reset statistic");
                     kbRcv = 0;
                     beginSeqNo = -1;
@@ -184,6 +191,7 @@ public class MulticastRcv extends Thread {
     };
 
     public void resetIndicator() {
+        Log.d(TAG, "resetIndicator()");
         kbRcv = 0;
         beginSeqNo = -1;
     }

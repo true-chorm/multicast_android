@@ -217,6 +217,7 @@ public class MainActivity extends AppCompatActivity {
     private final AnnouncementRcv.OnAnnoRcvCallback onAnnoRcvCallback = new AnnouncementRcv.OnAnnoRcvCallback() {
 
         long tickTmp;
+        int offlineCounter;
 
         @Override
         public void onAnnoRcv(String serverIP, String brcIP, String brcPort) {
@@ -225,15 +226,20 @@ public class MainActivity extends AppCompatActivity {
             MainActivity.this.brcPort = brcPort;
 
             if (srvIP == null || brcIP == null || brcPort == null) {
-                offline();
-                tickTmp = SystemClock.uptimeMillis() - timerBeginTick;
-                tvTimer.setText(String.format(Locale.US, getResources().getString(timerId), sdf.format(tickTmp)));
-                if(multicastRcv != null) {
-                    multicastRcv.resetIndicator();
+                if(offlineCounter++ > 3) {
+                    offlineCounter = 0;
+                    offline();
+                    tickTmp = SystemClock.uptimeMillis() - timerBeginTick;
+                    tvTimer.setText(String.format(Locale.US, getResources().getString(timerId), sdf.format(tickTmp)));
+                    if(multicastRcv != null) {
+                        multicastRcv.resetIndicator();
+                    }
                 }
+
                 return;
             }
 
+            offlineCounter = 0;
             //TODO IP地址和端口号的有效性检查 。
 
             online();
