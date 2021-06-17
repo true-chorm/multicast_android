@@ -84,6 +84,7 @@ public class ReportRcv extends Thread {
     public void stopRcv() {
         canRun = false;
         rrcvTimer.cancel();
+        dgSocket.close();
     }
 
     private CountDownTimer rrcvTimer = new CountDownTimer(FUTURE, INTERVAL) {
